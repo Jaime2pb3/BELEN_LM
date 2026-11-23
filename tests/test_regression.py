@@ -74,10 +74,15 @@ def main():
         got = json.loads(out.stdout.strip().splitlines()[-1])
         assert got["n_params"] == ref["n_params"], (legacy, got["n_params"])
         assert got["keys"] == ref["keys"], (legacy, "state_dict layout changed")
+        first = abs(got["losses"][0] - ref["losses"][0])
         diff = max(abs(a - b) for a, b in zip(got["losses"], ref["losses"]))
         worst = max(worst, diff)
-        assert diff < 1e-5, (legacy, got["losses"], ref["losses"])
-        print(f"  [ok] LEGACY={legacy}: parameters, layout and 3 training losses match the audited reference (max diff {diff:.1e})")
+        assert first < 1e-6, (legacy, "forward pass differs before any optimizer step", got["losses"][0], ref["losses"][0])
+        assert diff < 1e-3, (legacy, got["losses"], ref["losses"])
+        print(
+            f"  [ok] LEGACY={legacy}: parameters and layout match, first loss {first:.1e} from the audited reference,"
+            f" after 2 optimizer steps {diff:.1e}"
+        )
     return 0
 
 

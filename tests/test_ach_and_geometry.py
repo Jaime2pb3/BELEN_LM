@@ -94,7 +94,7 @@ def check(axon_mode, geometric):
     sd = model.state_dict()
     torch2, model2, _ = build(axon_mode, geometric)
     model2.load_state_dict(sd, strict=True)
-    return float(loss), det, causal
+    return float(loss.detach()), det, causal
 
 
 def geometry_invariants():

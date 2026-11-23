@@ -24,7 +24,8 @@ def distill_resonance(model: nn.Module) -> str:
     U_k = U[:, :top_k]
     S_k = S[:top_k]
     Vt_k = Vt[:top_k, :]
-    var_explained = float((S_k**2).sum() / (S**2).sum())
+    total = float((S**2).sum())
+    var_explained = float((S_k**2).sum()) / total if total > 0.0 else 0.0
     filled = bool(model.resonance.fill_count.item() > 0)
     ptr = int(model.resonance.slot_ptr.item())
     lines = [

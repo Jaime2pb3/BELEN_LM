@@ -292,7 +292,7 @@ def run_selftest() -> int:
             ]
         for o in opts:
             o.step()
-        losses.append(float(loss))
+        losses.append(float(loss.detach()))
     tests.append(
         (
             f"entrenamiento: loss {losses[0]:.3f} -> {losses[-1]:.3f} en 30 pasos sobre un batch fijo · sin gradiente: {nograd or 'ninguno'}",
