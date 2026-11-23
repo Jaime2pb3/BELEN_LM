@@ -5,7 +5,6 @@
 -----
 """
 
-
 from __future__ import annotations
 
 import numpy as np
@@ -201,7 +200,8 @@ def quark_views(phis: list[Tensor]) -> tuple[Tensor, Tensor]:
     s_charm = ((cos * hi).sum(-1) / n_hi.clamp_min(1) - (cos * lo).sum(-1) / n_lo.clamp_min(1)).abs()
     s_charm = torch.where((n_hi == 0) | (n_lo == 0), torch.zeros_like(s_charm), s_charm)
     xc = P - P.mean(dim=-2, keepdim=True)
-    eig = torch.linalg.eigvalsh(xc @ xc.transpose(-1, -2) / (m - 1)).abs()
+    with torch.autocast(device_type=P.device.type, enabled=False):
+        eig = torch.linalg.eigvalsh(xc @ xc.transpose(-1, -2) / (m - 1)).abs()
     tot = eig.sum(-1)
     s_top = torch.where(tot < 1e-09, torch.zeros_like(tot), eig.amax(-1) / tot.clamp_min(1e-09))
     S = (s_down + s_strange + s_up + s_charm + s_top + s_bottom) / 6.0
