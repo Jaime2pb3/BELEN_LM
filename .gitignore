@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.netlify/
+logs/
+ckpt/
+*.pt
+data/
+belen_work/
+belenc_work/
+.ipynb_checkpoints/
