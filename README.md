@@ -1,6 +1,8 @@
 # BELEN
 **Boost Enhance Limits to Expose Negations**
+
 A small language model that is not a transformer stack with a new coat of paint. It is a neuron drawn on paper, turned into code, and opened so other people can break it, fix it and grow it.
+
 TwoQuarks Research · Luis Jaime Ledesma Pérez · ORCID 0009-0008-8796-0800
 
 ---
