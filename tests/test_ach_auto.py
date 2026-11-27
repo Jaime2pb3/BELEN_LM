@@ -45,6 +45,17 @@ def main() -> int:
     assert "axon.store_log" in extra
     print(f"  [ok] ACH_AUTO=0 no cambia el layout · ACH_AUTO=1 agrega {len(extra)} entradas, todas en axon.")
 
+    # 1b. Con ACH_AUTO=1 todos los parámetros de la compuerta reciben gradiente.
+    on.train()
+    x, y = batch(torch)
+    on(x, y).backward()
+    for n in ("theta", "rho_k", "w_supp", "conductance_base", "store_log"):
+        p = getattr(on.axon, n)
+        assert p.grad is not None and float(p.grad.abs().sum()) > 0.0, f"ach_auto {n} sin gradiente"
+    on.zero_grad(set_to_none=True)
+    torch, on, groups_fn = build(True, ACH_AUTO_PATIENCE=1)
+    print("  [ok] ACH_AUTO=1: theta, rho_k, w_supp, conductance_base y store_log reciben gradiente")
+
     # 2. Antes de consolidar, la compuerta automática es idéntica a la original.
     x, y = batch(torch)
     sd = {k: v for k, v in on.state_dict().items() if k in keys_off}

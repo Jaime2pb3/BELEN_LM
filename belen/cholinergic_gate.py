@@ -227,7 +227,10 @@ class CholinergicGate(nn.Module):
             z = self._standardize(u)
             if self.auto and self.training:
                 self._auto_step(z)
-                c_base = self._base_conductance(h.dtype)
+        if self.auto:
+            # Fuera de no_grad: la consolidación pudo cambiar conductance_base y la máscara
+            # tiene que seguir llevando su gradiente.
+            c_base = self._base_conductance(h.dtype)
         rho = self._rho(z, h.dtype).unsqueeze(-1)
         if self.static_rho is not None:
             rho = torch.full_like(rho, self.static_rho)
