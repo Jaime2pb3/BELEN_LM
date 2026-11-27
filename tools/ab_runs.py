@@ -14,10 +14,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 ARMS = {
-    "base": {"AXON_MODE": "views", "GEOMETRIC_DENDRITE": "0"},
-    "geometry": {"AXON_MODE": "views", "GEOMETRIC_DENDRITE": "1"},
-    "ach": {"AXON_MODE": "ach", "GEOMETRIC_DENDRITE": "0"},
-    "ach_geometry": {"AXON_MODE": "ach", "GEOMETRIC_DENDRITE": "1"},
+    # ACH_AUTO va explícito en cada brazo: el entorno se hereda y un brazo no debe contaminar a otro.
+    "base": {"AXON_MODE": "views", "GEOMETRIC_DENDRITE": "0", "ACH_AUTO": "0"},
+    "geometry": {"AXON_MODE": "views", "GEOMETRIC_DENDRITE": "1", "ACH_AUTO": "0"},
+    "ach": {"AXON_MODE": "ach", "GEOMETRIC_DENDRITE": "0", "ACH_AUTO": "0"},
+    "ach_geometry": {"AXON_MODE": "ach", "GEOMETRIC_DENDRITE": "1", "ACH_AUTO": "0"},
+    "ach_auto": {"AXON_MODE": "ach", "GEOMETRIC_DENDRITE": "0", "ACH_AUTO": "1"},
     "legacy": {"LEGACY": "1"},
 }
 

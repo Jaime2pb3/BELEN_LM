@@ -37,7 +37,14 @@ def axon_status(base_model) -> str:
         d = axon.diagnostics()
         return (
             f"  ach_u:{d['u_mean']:.3f}  z:{d['z_mean']:+.3f}  theta:{d['theta']:+.2f}  k:{d['rho_k']:.2f}"
-            f"  rho:{d['rho_mean']:.3f}  mask_μ:{d['mask_mean']:.3f}  authority:{d['authority_ratio']:.2f}"
+            f"  rho:{d['rho_mean']:.3f}  rho_σ:{d['rho_std']:.3f}  c:{d['base_mean']:.3f}"
+            f"  mask_μ:{d['mask_mean']:.3f}  authority:{d['authority_ratio']:.2f}"
+            + (
+                f"  auto[cons:{int(d['n_consolidations'])} store_μ:{d['store_mean']:.3f} store_min:{d['store_min']:.3f}"
+                f" salto:{d['last_jump']:.1e} borde k/θ/c:{d['sat_k']:.2f}/{d['sat_theta']:.2f}/{d['sat_base']:.2f}]"
+                if d.get("auto")
+                else ""
+            )
         )
     k = axon.k_value() if hasattr(axon, "k_value") else axon.rho_k.item()
     return f"  axon_S:{axon.last_S:.3f}  mask_μ:{axon.last_mask_mean:.3f}  ρ:{axon.last_rho:.3f}  k:{k:.2f}"

@@ -102,6 +102,10 @@ class Belen(nn.Module):
                 rho_k_init=args.ach_rho_k,
                 base_scale=args.ach_base_scale,
                 ema_momentum=args.ach_ema_momentum,
+                auto=bool(getattr(args, "ach_auto", 0)),
+                auto_eps=getattr(args, "ach_auto_eps", 0.02),
+                auto_patience=getattr(args, "ach_auto_patience", 200),
+                auto_max=getattr(args, "ach_auto_max", 4),
             )
         elif self.axon_mode == "views":
             self.axon = AxonViews(

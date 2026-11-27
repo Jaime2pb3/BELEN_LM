@@ -152,6 +152,19 @@ def ablation_report(args, base_model, val_tokens, device) -> dict:
     restore()
     out["sin axón ni compuerta"] = score(use_axon=False)
     restore()
+    gate = getattr(base_model, "axon", None)
+    if base_model.axon_mode == "ach" and hasattr(gate, "static_rho"):
+        # ¿La compuerta aporta por su dinámica o por su escala promedio? ρ fijo en su media
+        # deja la escala aprendida y quita solo la respuesta a la incoherencia.
+        rhos = []
+        h = gate.register_forward_hook(lambda m, i, o: rhos.append(float(m.last_rho)))
+        score()
+        h.remove()
+        restore()
+        gate.static_rho = sum(rhos) / max(len(rhos), 1)
+        out["compuerta sin dinámica (ρ fijo en su media)"] = score()
+        gate.static_rho = None
+        restore()
     hooks.append(base_model.dendrite.register_forward_hook(lambda m, i, o: o * 0.0))
     out["sin dendrita"] = score()
     restore()

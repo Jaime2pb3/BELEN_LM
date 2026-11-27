@@ -134,6 +134,7 @@ def build_param_groups(base_model: "Belen") -> dict:
     nowd = [p for n, p in base_model.blocks.named_parameters() if "resid_mix" in n] + [
         base_model.skip_weights
     ]
+    nowd += [p for n, p in base_model.axon.named_parameters() if n == "store_log"]
     geometry = [p for n, p in base_model.dendrite.named_parameters() if n.startswith("geometry.")]
     taken = {id(p) for p in emb + matrix + nowd + geometry}
     scalar = [p for p in base_model.parameters() if id(p) not in taken]
