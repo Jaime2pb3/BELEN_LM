@@ -102,17 +102,15 @@ class TopQuark:
         m = len(phi_list)
         if m < 2:
             return 0.0
-        try:
-            stacked = torch.stack([p.squeeze(0).float() for p in phi_list])
+        stacked = torch.stack([p.squeeze(0).float() for p in phi_list])
+        # Sin autocast: en bf16 eigvalsh falla, y el except anterior devolvía 0.0 sin avisar.
+        with torch.autocast(device_type=stacked.device.type, enabled=False):
             xc = stacked - stacked.mean(dim=0, keepdim=True)
-            eigs = torch.linalg.eigvalsh(xc @ xc.T / (stacked.size(0) - 1))
-            eigs = eigs.abs()
-            total = eigs.sum().item()
-            if total < 1e-09:
-                return 0.0
-            return float(eigs.max().item() / total)
-        except Exception:
+            eigs = torch.linalg.eigvalsh(xc @ xc.T / (stacked.size(0) - 1)).abs()
+        total = eigs.sum().item()
+        if total < 1e-09:
             return 0.0
+        return float(eigs.max().item() / total)
 
 
 class BottomQuark:

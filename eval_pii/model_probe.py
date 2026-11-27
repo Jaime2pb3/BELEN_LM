@@ -297,7 +297,16 @@ class Extractor:
         off = 1 if self.bos is not None else 0
         part = {s: self._cap[s][0, off:].float().cpu().numpy() for s in self.streams}
         self.restore()
-        return {s: float(np.abs(full[s][:k] - part[s]).max()) for s in self.streams}
+        # Δ relativo a la escala del flujo: el residual llega a ~1e4 en capas profundas y un umbral
+        # absoluto confunde ruido de kernel bf16 con dependencia del futuro.
+        return {
+            s: float(np.abs(full[s][:k] - part[s]).max() / (np.abs(full[s][:k]).max() + 1e-06))
+            for s in self.streams
+        }
+
+    def stream_norms(self, text: str) -> Dict[str, float]:
+        r = self.run(text)
+        return {s: float(np.median(np.linalg.norm(r[s], axis=-1))) for s in self.streams if len(r[s])}
 
 
 def tokenizer_equivalences(
@@ -418,7 +427,7 @@ def fit_all(
 ) -> Dict[str, StdProbe]:
     D = ex.model.tok_emb.weight.shape[1]
     toks = sum((len(ex.encode(t)) for t in texts[:200])) / max(min(len(texts), 200), 1) * len(texts)
-    per_stream_gb = toks * D * 2 / 1000000000.0
+    per_stream_gb = toks * D * 4 / 1000000000.0
     k = max(1, int(budget_gb / max(per_stream_gb, 1e-09)))
     probes: Dict[str, StdProbe] = {}
     for g0 in range(0, len(ex.streams), k):
@@ -427,7 +436,10 @@ def fit_all(
         for t in texts:
             r = ex.run(t, group)
             for s in group:
-                store[s].append(r[s].astype(np.float16))
+                h = np.asarray(r[s], np.float32)
+                if not np.isfinite(h).all():
+                    raise FloatingPointError(f"estado no finito en el flujo {s}")
+                store[s].append(h)
         for s in group:
             for kind, p in fit_stream(store[s], ev, role, y, seeds, epochs).items():
                 probes[f"{s}#{kind}"] = p
@@ -921,6 +933,7 @@ def run_ficha(
             ind[tag] = {
                 "independence": ex.check_independence(probe_t, others),
                 "causality": ex.check_causality(probe_t),
+                "norms": ex.stream_norms(probe_t),
             }
             if not ind[tag]["independence"]["ok"]:
                 raise SystemExit(
@@ -1068,12 +1081,14 @@ def report(res: Dict) -> str:
             "**Verificaciones previas**",
             "",
             f"- Independencia de orden (memoria congelada): Δ máx {ind['max_diff_frozen']:.1e}. Sin congelar, el mismo texto habría cambiado hasta {worst[1]:.3g} en `{worst[0]}` tras 12 textos. Buffers que mutan en eval: {', '.join(('`' + b + '`' for b in ind['mutated_buffers'])) or 'ninguno'}",
-            f"- Causalidad (el estado en t no depende del futuro): Δ máx {max(caus.values()):.1e}"
+            f"- Causalidad (el estado en t no depende del futuro): Δ relativo máx {max(caus.values()):.1e}"
             + (
                 ""
                 if max(caus.values()) <= 0.0001
                 else f" · NO causal en: {[s for s, v in caus.items() if v > 0.0001]}"
             ),
+            "- Norma del residual por flujo (mediana por token): "
+            + " · ".join(f"`{k}` {v:.3g}" for k, v in A["checks"]["entrenado"].get("norms", {}).items()),
             f"- Tokenizer: {tk['chars_per_token']:.2f} caracteres por token · largo mediano {tk['median']}, p95 {tk['p95']}, máx {tk['max']} · tasa de desconocidos {f2(tk['unk_rate'])} · textos más largos que el entrenamiento: {A['over_train_len']['entrenado'][0]} de {A['over_train_len']['entrenado'][1]}",
             "- Evasiones que el tokenizer colapsa: "
             + (", ".join((f"`{a}` ≡ `{c}`" for a, c in A["tokenizer"]["aliases"].items())) or "ninguna")
